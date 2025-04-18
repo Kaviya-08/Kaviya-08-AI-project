@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Email Summarizer</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #4285f4;
+            color: white;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: #4285f4;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #3367d6;
+        }
+
+        .emails-container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .email-list {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            max-height: 700px;
+            overflow-y: auto;
+        }
+
+        .email-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-radius: 4px;
+        }
+
+        .email-item:hover {
+            background-color: #f0f7ff;
+        }
+
+        .email-item.selected {
+            background-color: #e3f2fd;
+            border-left: 4px solid #4285f4;
+        }
+
+        .summary-container {
+            flex: 2;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            max-height: 700px;
+            overflow-y: auto;
+        }
+
+        .email-subject {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 1.1em;
+        }
+
+        .email-from {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 3px;
+        }
+
+        .email-date {
+            color: #999;
+            font-size: 0.8em;
+        }
+
+        .summary-title {
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            color: #4285f4;
+        }
+
+        .summary-content {
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+        }
+
+        .loading::after {
+            content: "";
+            width: 40px;
+            height: 40px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #4285f4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-top: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Markdown content styling */
+        .markdown-content {
+            line-height: 1.6;
+        }
+
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3,
+        .markdown-content h4,
+        .markdown-content h5,
+        .markdown-content h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .markdown-content h1 {
+            font-size: 2em;
+        }
+
+        .markdown-content h2 {
+            font-size: 1.5em;
+        }
+
+        .markdown-content h3 {
+            font-size: 1.25em;
+        }
+
+        .markdown-content p {
+            margin-bottom: 16px;
+        }
+
+        .markdown-content a {
+            color: #4285f4;
+            text-decoration: none;
+        }
+
+        .markdown-content a:hover {
+            text-decoration: underline;
+        }
+
+        .markdown-content ul,
+        .markdown-content ol {
+            padding-left: 2em;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content li {
+            margin-bottom: 4px;
+        }
+
+        .markdown-content blockquote {
+            border-left: 4px solid #e0e0e0;
+            padding-left: 16px;
+            margin-left: 0;
+            color: #666;
+        }
+
+        .markdown-content code {
+            font-family: 'Courier New', monospace;
+            padding: 2px 4px;
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        .markdown-content pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .markdown-content hr {
+            height: 1px;
+            background-color: #e0e0e0;
+            border: none;
+            margin: 24px 0;
+        }
+
+        .markdown-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content table th,
+        .markdown-content table td {
+            border: 1px solid #e0e0e0;
+            padding: 8px 12px;
+        }
+
+        .markdown-content table th {
+            background-color: #f6f8fa;
+            font-weight: 600;
+        }
+
+        .email-actions {
+            margin-bottom: 15px;
+        }
+
+        .email-metadata {
+            background-color: #f9f9f9;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4285f4;
+        }
+
+        .email-metadata-item {
+            margin-bottom: 6px;
+        }
+
+        .metadata-label {
+            font-weight: 600;
+            color: #555;
+            display: inline-block;
+            width: 70px;
+        }
+
+        /* Empty state styling */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: #666;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 20px;
+            fill: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Email Summarizer</h1>
+    </div>
+
+    <div class="container">
+        <div class="navigation">
+            <a href="/" class="btn">🏠 Home</a>
+            <a href="/news_summary" class="btn">📰 News Summarizer</a>
+        </div>
+
+        <div class="emails-container">
+            <div class="email-list">
+                <h2>Recent Emails</h2>
+                {% if emails %}
+                    {% for email in emails %}
+                        <div class="email-item" data-id="{{ email.id }}">
+                            <div class="email-subject">{{ email.subject }}</div>
+                            <div class="email-from">{{ email.from }}</div>
+                            <div class="email-date">{{ email.date }}</div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10zm-8-7L4 6h16l-8 5z"/>
+                        </svg>
+                        <p>No emails found.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="summary-container">
+                <h2 class="summary-title">Email Summary</h2>
+                
+                {% if emails and emails[0].summary %}
+                    <div class="email-metadata">
+                        <div class="email-metadata-item">
+                            <span class="metadata-label">From:</span>
+                            <span>{{ emails[0].from }}</span>
+                        </div>
+                        <div class="email-metadata-item">
+                            <span class="metadata-label">Subject:</span>
+                            <span>{{ emails[0].subject }}</span>
+                        </div>
+                        <div class="email-metadata-item">
+                            <span class="metadata-label">Date:</span>
+                            <span>{{ emails[0].date }}</span>
+                        </div>
+                    </div>
+                    <div class="summary-content">
+                        <h3>Summary</h3>
+                        <div class="markdown-content">{{ emails[0].summary | safe }}</div>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                        <p>Select an email to view its summary.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configure marked for rendering markdown
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            headerIds: false,
+            langPrefix: 'language-',
+            highlight: function (code, language) {
+                if (language && hljs.getLanguage(language)) {
+                    try {
+                        return hljs.highlight(code, { language }).value;
+                    } catch (err) {}
+                }
+                return code;
+            }
+        });
+        
+        // Format the message using marked
+        function formatMessage(text) {
+            return marked.parse(text);
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailItems = document.querySelectorAll('.email-item');
+            const summaryContent = document.querySelector('.summary-container');
+            
+            if (emailItems.length > 0) {
+                emailItems[0].classList.add('selected');
+            }
+           
+            emailItems.forEach(item => {
+                item.addEventListener('click', function () {
+                    // Update selection styling
+                    emailItems.forEach(el => el.classList.remove('selected'));
+                    this.classList.add('selected');
+
+                    // Get email details
+                    const emailId = this.getAttribute('data-id');
+                    const subject = this.querySelector('.email-subject').textContent;
+                    const from = this.querySelector('.email-from').textContent;
+                    const date = this.querySelector('.email-date').textContent;
+
+                    // Show loading state
+                    summaryContent.innerHTML = `
+                        <h2 class="summary-title">Email Summary</h2>
+                        <div class="loading">Generating summary...</div>
+                    `;
+
+                    // Fetch the summary
+                    fetch('/summarize_email', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `email_id=${emailId}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.summary) {
+                            summaryContent.innerHTML = `
+                                <h2 class="summary-title">Email Summary</h2>
+                                <div class="email-metadata">
+                                    <div class="email-metadata-item">
+                                        <span class="metadata-label">From:</span>
+                                        <span>${from}</span>
+                                    </div>
+                                    <div class="email-metadata-item">
+                                        <span class="metadata-label">Subject:</span>
+                                        <span>${subject}</span>
+                                    </div>
+                                    <div class="email-metadata-item">
+                                        <span class="metadata-label">Date:</span>
+                                        <span>${date}</span>
+                                    </div>
+                                </div>
+                                <div class="summary-content">
+                                    <h3>Summary</h3>
+                                    <div class="markdown-content">${formatMessage(data.summary)}</div>
+                                </div>
+                            `;
+                            
+                            // Initialize syntax highlighting for code blocks
+                            document.querySelectorAll('pre code').forEach((block) => {
+                                hljs.highlightBlock(block);
+                            });
+                        } else {
+                            summaryContent.innerHTML = `
+                                <h2 class="summary-title">Email Summary</h2>
+                                <div class="email-metadata">
+                                    <div class="email-metadata-item">
+                                        <span class="metadata-label">From:</span>
+                                        <span>${from}</span>
+                                    </div>
+                                    <div class="email-metadata-item">
+                                        <span class="metadata-label">Subject:</span>
+                                        <span>${subject}</span>
+                                    </div>
+                                    <div class="email-metadata-item">
+                                        <span class="metadata-label">Date:</span>
+                                        <span>${date}</span>
+                                    </div>
+                                </div>
+                                <div class="summary-content">
+                                    <div class="empty-state">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H6c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h12c.55 0 1 .45 1 1v12c0 .55-.45 1-1 1zm-4.44-6.19l-2.35 3.02-1.56-1.88c-.2-.25-.58-.24-.78.01l-1.74 2.23c-.26.33-.02.81.39.81h8.98c.41 0 .65-.47.4-.8l-2.55-3.39c-.19-.26-.59-.26-.79 0z"/>
+                                        </svg>
+                                        <p>Could not generate summary. ${data.error || 'Please try again later.'}</p>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        summaryContent.innerHTML = `
+                            <h2 class="summary-title">Email Summary</h2>
+                            <div class="email-metadata">
+                                <div class="email-metadata-item">
+                                    <span class="metadata-label">From:</span>
+                                    <span>${from}</span>
+                                </div>
+                                <div class="email-metadata-item">
+                                    <span class="metadata-label">Subject:</span>
+                                    <span>${subject}</span>
+                                </div>
+                                <div class="email-metadata-item">
+                                    <span class="metadata-label">Date:</span>
+                                    <span>${date}</span>
+                                </div>
+                            </div>
+                            <div class="summary-content">
+                                <div class="empty-state">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                                    </svg>
+                                    <p>Error generating summary: ${error}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

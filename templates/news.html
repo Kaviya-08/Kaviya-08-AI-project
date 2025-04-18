@@ -1,0 +1,329 @@
+<!-- templates/news.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Summarizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #4285f4;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: #4285f4;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .news-section {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .input-group input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .sources {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .source-btn {
+            background-color: #eee;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        
+        .source-btn:hover {
+            background-color: #ddd;
+        }
+        
+        .summary-container {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        /* New styles for formatted content */
+        .summary-content h1 {
+            font-size: 1.8em;
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+            color: #333;
+        }
+        
+        .summary-content h2 {
+            font-size: 1.4em;
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+            color: #444;
+        }
+        
+        .summary-content h3 {
+            font-size: 1.2em;
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+            color: #555;
+        }
+        
+        .summary-content p {
+            line-height: 1.5;
+            margin-bottom: 1em;
+        }
+        
+        .summary-content ul {
+            padding-left: 20px;
+            margin-top: 0.5em;
+            margin-bottom: 1em;
+        }
+        
+        .summary-content li {
+            margin-bottom: 0.5em;
+            line-height: 1.4;
+        }
+        
+        .bullet-point {
+            background-color: #f0f7ff;
+            padding: 10px 15px;
+            border-left: 4px solid #4285f4;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        
+        .article-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .article-source {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>News Summarizer</h1>
+    </div>
+    
+    <div class="container">
+        <div class="navigation">
+            <a href="/" class="btn">Back to Home</a>
+            <a href="/email_summary" class="btn">Email Summarizer</a>
+        </div>
+        
+        <div class="news-section">
+            <h2>Summarize News Article</h2>
+            
+            <form id="news-form">
+                <div class="input-group">
+                    <input type="url" id="news-url" placeholder="Enter news article URL" required>
+                    <button type="submit" class="btn">Summarize</button>
+                </div>
+            </form>
+            
+            <div class="sources">
+                <h3>Popular Sources:</h3>
+                {% for source in news_sources %}
+                    <button class="source-btn" data-url="{{ source.url }}">{{ source.name }}</button>
+                {% endfor %}
+            </div>
+            
+            <div id="summary-container" class="summary-container" style="display: none;">
+                <h3>Summary</h3>
+                <div id="article-info"></div>
+                <div id="summary-content" class="summary-content"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const newsForm = document.getElementById('news-form');
+            const newsUrlInput = document.getElementById('news-url');
+            const summaryContainer = document.getElementById('summary-container');
+            const summaryContent = document.getElementById('summary-content');
+            const articleInfo = document.getElementById('article-info');
+            const sourceButtons = document.querySelectorAll('.source-btn');
+            
+            // Handle source button clicks
+            sourceButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    newsUrlInput.value = this.getAttribute('data-url');
+                });
+            });
+            
+            // Function to format markdown to HTML
+            function formatMarkdown(text) {
+                // Handle empty or null text
+                if (!text) return '';
+                
+                // Create a formatted version
+                let formatted = text;
+                
+                // Format headers (# Header)
+                formatted = formatted.replace(/^# (.*?)$/gm, '<h1>$1</h1>');
+                formatted = formatted.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
+                formatted = formatted.replace(/^### (.*?)$/gm, '<h3>$1</h3>');
+                
+                // Format bullet points
+                let lines = formatted.split('\n');
+                let inList = false;
+                let formattedLines = [];
+                
+                for (let i = 0; i < lines.length; i++) {
+                    let line = lines[i].trim();
+                    
+                    // Check for bullet points (- or *)
+                    if (line.startsWith('- ') || line.startsWith('* ')) {
+                        let content = line.substring(2);
+                        
+                        if (!inList) {
+                            // Start a new list
+                            formattedLines.push('<ul>');
+                            inList = true;
+                        }
+                        
+                        formattedLines.push(`<li class="bullet-point">${content}</li>`);
+                    } else {
+                        // Close list if we were in one
+                        if (inList) {
+                            formattedLines.push('</ul>');
+                            inList = false;
+                        }
+                        
+                        // If line is empty and the next one is a bullet point, skip adding paragraph
+                        if (line === '' && i < lines.length - 1 && 
+                            (lines[i+1].trim().startsWith('- ') || lines[i+1].trim().startsWith('* '))) {
+                            continue;
+                        }
+                        
+                        // Regular paragraph (if not empty)
+                        if (line !== '') {
+                            formattedLines.push(`<p>${line}</p>`);
+                        }
+                    }
+                }
+                
+                // Close list if we're still in one
+                if (inList) {
+                    formattedLines.push('</ul>');
+                }
+                
+                // Join all formatted lines
+                return formattedLines.join('');
+            }
+            
+            // Extract domain from URL for display
+            function extractDomain(url) {
+                try {
+                    const urlObj = new URL(url);
+                    return urlObj.hostname.replace('www.', '');
+                } catch (e) {
+                    return url;
+                }
+            }
+            
+            // Handle form submission
+            newsForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const url = newsUrlInput.value.trim();
+                if (!url) return;
+                
+                // Show loading
+                summaryContainer.style.display = 'block';
+                articleInfo.innerHTML = `<div class="article-source">Source: ${extractDomain(url)}</div>`;
+                summaryContent.innerHTML = '<div class="loading">Scraping and summarizing article...</div>';
+                
+                // Get summary for this news article
+                fetch('/summarize_news', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `url=${encodeURIComponent(url)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.summary) {
+                        // Format the summary and display it
+                        const formattedSummary = formatMarkdown(data.summary);
+                        summaryContent.innerHTML = formattedSummary;
+                        
+                        // Add article info if available
+                        if (data.title) {
+                            articleInfo.innerHTML = `
+                                <div class="article-title">${data.title}</div>
+                                <div class="article-source">Source: ${extractDomain(url)}</div>
+                            `;
+                        }
+                    } else {
+                        summaryContent.innerHTML = `<p>Could not generate summary. ${data.error || ''}</p>`;
+                    }
+                })
+                .catch(error => {
+                    summaryContent.innerHTML = `<p>Error generating summary: ${error}</p>`;
+                });
+            });
+        });
+    </script>
+</body>
+</html>

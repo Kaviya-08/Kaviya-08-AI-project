@@ -1,0 +1,82 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AI Summarizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #4285f4;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .options {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .option-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            width: 300px;
+            text-align: center;
+        }
+
+        .btn {
+            background-color: #4285f4;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AI-Based Auto Summarizer</h1>
+        <p>Automatically summarize emails and news articles</p>
+    </div>
+
+    <div class="container">
+        <div class="options">
+            <div class="option-card">
+                <h2>Email Summarizer</h2>
+                <p>Connect to your Gmail and get concise summaries.</p>
+                <a href="/email_summary" class="btn">Go to Email Summary</a>
+            </div>
+
+            <div class="option-card">
+                <h2>News Summarizer</h2>
+                <p>Summarize latest news articles quickly and easily.</p>
+                <a href="/news_summary" class="btn">Go to News Summary</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
